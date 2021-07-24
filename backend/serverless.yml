@@ -3,7 +3,46 @@ service:
 
 plugins:
   - serverless-webpack
-  - serverless-iam-roles-per-function
+  #- serverless-iam-roles-per-function
+  - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
+
+custom:
+  documentation:
+    api:
+      info:
+        version: v1.0.0
+        title: UdaPro4Api
+        description: Api for the project of the 4th Udacity CD course
+    models:
+      - name: CreateToDoRequest
+        contentType: application/json
+        schema:
+          required:
+            - name
+            - dueDate
+            - createdAt
+          properties:
+            name:
+              type: string
+            dueDate:
+              type: string
+            createdAt:
+              type: string
+      - name: UpdateToDoRequest
+        contentType: application/json
+        schema:
+          required:
+            - name
+            - dueDate
+            - done
+          properties:
+            name:
+              type: string
+            dueDate:
+              type: string
+            done:
+              type: boolean
 
 provider:
   name: aws
@@ -11,6 +50,27 @@ provider:
 
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
+
+  environment:
+    TODOS_TABLE: TODOS_TABLE_THREE
+    INDEX_NAME: INDEX
+    REQ_NAME: REQ_VALIDATOR
+    IMAGE_BUCKET: image-bucket-fedor-1234
+    URL_EXPIRE: 300
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:Query
+        - dynamodb:DeleteItem
+        - dynamodb:UpdateItem
+      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:GetObject
+      Resource: arn:aws:s3:::${self:provider.environment.IMAGE_BUCKET}/*
 
 functions:
 
@@ -24,23 +84,41 @@ functions:
       - http:
           method: get
           path: todos
+          cors: true
+          authorizer: Auth
 
-  # TODO: Configure this function
-  GetTodos:
+  # TODO: Configure this function  
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
     events:
       - http:
+          documentation:
+            summary: "Create new todo item"
+            description: "Create new todo item"
+            requestModels:
+              'application/json': CreateToDoRequest
           method: post
           path: todos
+          reqValidatorName: reqValid
+          cors: true
+          authorizer: Auth
 
   # TODO: Configure this function
   UpdateTodo:
     handler: src/lambda/http/updateTodo.handler
     events:
       - http:
+          documentation:
+            summary: "Updates existing todo"
+            description: "Updates existing todo"
+            requestModels:
+              'application/json': UpdateToDoRequest
           method: patch
           path: todos/{todoId}
+          cors: true
+          reqValidatorName: reqValid
+          authorizer: Auth
+          
 
   # TODO: Configure this function
   DeleteTodo:
@@ -49,6 +127,8 @@ functions:
       - http:
           method: delete
           path: todos/{todoId}
+          cors: true
+          authorizer: Auth
 
   # TODO: Configure this function
   GenerateUploadUrl:
@@ -57,7 +137,75 @@ functions:
       - http:
           method: post
           path: todos/{todoId}/attachment
+          cors: true
 
 resources:
   Resources:
-    # TODO: Add any necessary AWS resources
+    reqValid:
+      Type: "AWS::ApiGateway::RequestValidator"
+      Properties:
+        Name: 'reqValid'
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false
+
+    TodosTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S          
+          - AttributeName: todoId
+            AttributeType: S
+          - AttributeName: dueDate
+            AttributeType: S          
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+          - AttributeName: todoId
+            KeyType: RANGE          
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.TODOS_TABLE}
+        LocalSecondaryIndexes:
+          - IndexName: ${self:provider.environment.INDEX_NAME}
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+              - AttributeName: dueDate
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL # What attributes will be copied to an index
+
+    ImagesBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.IMAGE_BUCKET}
+        CorsConfiguration:
+          CorsRules:
+            -
+              AllowedOrigins:
+                - '*'
+              AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              MaxAge: 3000
+
+    BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        PolicyDocument:
+          Id: MyPolicy
+          Version: "2012-10-17"
+          Statement:
+            - Sid: PublicReadForGetBucketObjects
+              Effect: Allow
+              Principal: '*'
+              Action: 's3:GetObject'
+              Resource: 'arn:aws:s3:::${self:provider.environment.IMAGE_BUCKET}/*'
+        Bucket: !Ref ImagesBucket

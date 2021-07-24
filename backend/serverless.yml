@@ -3,46 +3,7 @@ service:
 
 plugins:
   - serverless-webpack
-  #- serverless-iam-roles-per-function
-  - serverless-reqvalidator-plugin
-  - serverless-aws-documentation
-
-custom:
-  documentation:
-    api:
-      info:
-        version: v1.0.0
-        title: UdaPro4Api
-        description: Api for the project of the 4th Udacity CD course
-    models:
-      - name: CreateToDoRequest
-        contentType: application/json
-        schema:
-          required:
-            - name
-            - dueDate
-            - createdAt
-          properties:
-            name:
-              type: string
-            dueDate:
-              type: string
-            createdAt:
-              type: string
-      - name: UpdateToDoRequest
-        contentType: application/json
-        schema:
-          required:
-            - name
-            - dueDate
-            - done
-          properties:
-            name:
-              type: string
-            dueDate:
-              type: string
-            done:
-              type: boolean
+  - serverless-iam-roles-per-function
 
 provider:
   name: aws
@@ -54,7 +15,6 @@ provider:
   environment:
     TODOS_TABLE: TODOS_TABLE_THREE
     INDEX_NAME: INDEX
-    REQ_NAME: REQ_VALIDATOR
     IMAGE_BUCKET: image-bucket-fedor-1234
     URL_EXPIRE: 300
 
@@ -92,14 +52,8 @@ functions:
     handler: src/lambda/http/createTodo.handler
     events:
       - http:
-          documentation:
-            summary: "Create new todo item"
-            description: "Create new todo item"
-            requestModels:
-              'application/json': CreateToDoRequest
           method: post
           path: todos
-          reqValidatorName: reqValid
           cors: true
           authorizer: Auth
 
@@ -108,15 +62,9 @@ functions:
     handler: src/lambda/http/updateTodo.handler
     events:
       - http:
-          documentation:
-            summary: "Updates existing todo"
-            description: "Updates existing todo"
-            requestModels:
-              'application/json': UpdateToDoRequest
           method: patch
           path: todos/{todoId}
           cors: true
-          reqValidatorName: reqValid
           authorizer: Auth
           
 
@@ -141,15 +89,7 @@ functions:
 
 resources:
   Resources:
-    reqValid:
-      Type: "AWS::ApiGateway::RequestValidator"
-      Properties:
-        Name: 'reqValid'
-        RestApiId:
-          Ref: ApiGatewayRestApi
-        ValidateRequestBody: true
-        ValidateRequestParameters: false
-
+    
     TodosTable:
       Type: AWS::DynamoDB::Table
       Properties:

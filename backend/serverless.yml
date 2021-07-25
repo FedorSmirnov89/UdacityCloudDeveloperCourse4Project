@@ -6,6 +6,7 @@ plugins:
   - serverless-iam-roles-per-function
   - serverless-reqvalidator-plugin
   - serverless-aws-documentation
+  - serverless-iam-roles-per-function
 
 custom:
   documentation:
@@ -61,7 +62,6 @@ provider:
   iamRoleStatements:
     - Effect: Allow
       Action:
-        - dynamodb:PutItem
         - dynamodb:Query
         - dynamodb:DeleteItem
         - dynamodb:UpdateItem
@@ -102,6 +102,11 @@ functions:
           reqValidatorName: reqValid
           cors: true
           authorizer: Auth
+    iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
   # TODO: Configure this function
   UpdateTodo:

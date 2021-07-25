@@ -55,7 +55,6 @@ provider:
   environment:
     TODOS_TABLE: TODOS_TABLE_THREE
     INDEX_NAME: INDEX
-    REQ_NAME: REQ_VALIDATOR
     IMAGE_BUCKET: image-bucket-fedor-1234
     URL_EXPIRE: 300
 
@@ -63,7 +62,6 @@ provider:
     - Effect: Allow
       Action:
         - dynamodb:Query
-        - dynamodb:UpdateItem
       Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
     - Effect: Allow
       Action:
@@ -122,6 +120,11 @@ functions:
           path: todos/{todoId}
           cors: true
           authorizer: Auth
+    iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:UpdateItem
+      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
           
 
   # TODO: Configure this function

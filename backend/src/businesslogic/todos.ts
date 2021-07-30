@@ -20,3 +20,7 @@ export async function updateTodo(userId: string, todoId: string, request: Update
 
     return dbAccess.updateTodo(userId, todoId, updateContent)
 }
+
+export async function deleteTodo(userId: string, todoId: string){
+    return dbAccess.deleteTodo(userId, todoId)
+}

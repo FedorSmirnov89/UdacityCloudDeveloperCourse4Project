@@ -5,7 +5,10 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } f
 import * as AWS  from 'aws-sdk'
 import { createLogger } from '../../utils/logger'
 
-const s3 = new AWS.S3({
+const AWSXRay = require('aws-xray-sdk')
+
+const XAWS = AWSXRay.captureAWS(AWS)
+const s3 = new XAWS.S3({
   signatureVersion: 'v4'
 })
 

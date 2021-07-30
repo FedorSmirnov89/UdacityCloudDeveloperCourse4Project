@@ -4,6 +4,7 @@ import { TodoItem } from "../models/TodoItem"
 import { TodoUpdate } from "../models/TodoUpdate"
 import { DbAccess } from "../dataLayer/DbAccess"
 import { UpdateTodoRequest } from "../requests/UpdateTodoRequest"
+import { CreateTodoRequest } from "../requests/CreateTodoRequest"
 
 const dbAccess = new DbAccess()
 
@@ -23,4 +24,8 @@ export async function updateTodo(userId: string, todoId: string, request: Update
 
 export async function deleteTodo(userId: string, todoId: string){
     return dbAccess.deleteTodo(userId, todoId)
+}
+
+export async function createTodo(userId: string, todoId: string, createRequest: CreateTodoRequest): Promise<TodoItem>{
+    return dbAccess.createTodo(userId, todoId, createRequest)
 }

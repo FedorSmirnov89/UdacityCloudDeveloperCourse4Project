@@ -58,6 +58,10 @@ provider:
     IMAGE_BUCKET: image-bucket-fedor-1234
     URL_EXPIRE: 300
 
+  tracing:
+    lambda: true
+    apiGateway: true
+
 functions:
 
   Auth:
